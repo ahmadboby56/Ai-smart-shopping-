@@ -210,6 +210,21 @@ def redirect_store():
         url = 'https:' + url
     elif not url.startswith('http://') and not url.startswith('https://'):
         url = 'https://' + url
+
+    # Attach Real Affiliate Tracking Tag if configured in app_settings
+    try:
+        conn = get_db_connection()
+        store_key = store.lower().replace(' ', '_').replace('.', '_')
+        aff_setting = conn.execute("SELECT value FROM app_settings WHERE key = ?", (f"{store_key}_aff_id",)).fetchone()
+        conn.close()
+        aff_id = aff_setting['value'] if aff_setting and aff_setting['value'] else None
+        
+        if aff_id and aff_id.strip():
+            param = 'tag' if 'amazon' in store_key else 'aff_id'
+            join_char = '&' if '?' in url else '?'
+            url = f"{url}{join_char}{param}={aff_id.strip()}"
+    except Exception as e:
+        print("Error appending affiliate tag:", e)
         
     return redirect(url)
 
